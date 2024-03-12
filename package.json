@@ -1,6 +1,6 @@
 {
   "name": "adonis-edge-htmx",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "HTMX helpers for the Adonis web server and Edge template engine",
   "type": "module",
   "main": "build/index.js",
