@@ -2,10 +2,9 @@
 
 [![typescript-image]][typescript-url] [![npm-image]][npm-url] [![license-image]][license-url]
 
-HTMX helpers for the Adonis web server and Edge template engine.
+HTMX wrapper for Edge renderer tailored for the Adonis web server.
 
-It introduces concept of template fragments described on [HTMX website](https://htmx.org/essays/template-fragments/)
-
+It also introduces concept of template fragments described on [HTMX website](https://htmx.org/essays/template-fragments/).
 
 ## Instalation
 Install it using `npm`, `yarn` or `pnpm`.
@@ -37,6 +36,33 @@ providers: [
 ]
 ```
 
+### Request
+
+You can check if given request has been made by htmx and act accordingly
+```ts
+async function handle({ request }: HtppContext) {
+  if(request.htmx) {
+    // Request has been made by HTMX - you can now use request.htmx to get access to HTMX related info e.g.
+    request.htmx.boosted // true if boosted
+  }
+}
+```
+### Response
+
+The provider adds `htmx` property to `HttpContext`. This property is a wrapper around `EdgeRenderer` that introduces fluent interface to create and render HTMX responses.
+
+```ts
+async function handle({ htmx }: HttpContext) {
+...
+  return htmx
+    .location('/client-redirect')
+    .trigger('some-event')
+    .render('/path/to/template#fragment', { data })
+}
+```
+
+### Template fragments
+
 Add `@fragment` tag to your edge template.
 ```html
 <header>Some header</header>
@@ -49,12 +75,12 @@ My awesome content
 Now you can render not only full template but also just template fragment
 
 ```ts
-async function full({ view }: HttpContext) {
-  return view.render('path/to/template', { data })
+async function full({ htmx }: HttpContext) {
+  return htmx.render('path/to/template', { data })
 }
 
-async function contentOnly({ view }: HttpContext) {
-  return view.render('path/to/template#content', { data })
+async function contentOnly({ htmx }: HttpContext) {
+  return htmx.render('path/to/template#content', { data })
 }
 ```
 
