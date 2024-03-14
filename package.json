@@ -11,6 +11,7 @@
   ],
   "exports": {
     ".": "./build/index.js",
+    ".types": "./build/src/types.js",
     "./headers": "./build/src/headers.js",
     "./provider": "./build/src/providers/edge_htmx_provider.js"
   },
@@ -76,6 +77,7 @@
     "entry": [
       "./index.ts",
       "./src/headers.ts",
+      "./src/types.ts",
       "./src/providers/edge_htmx_provider.ts"
     ],
     "outDir": "./build",

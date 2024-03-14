@@ -3,7 +3,8 @@ import { ApplicationService } from '@adonisjs/core/types'
 import edge, { Edge } from 'edge.js'
 import { HTMXRequestHeader, HTMXResponseHeader } from '../headers.js'
 import { fragmentTag } from '../tags/fragment.js'
-import { extractFragment } from '../utils.js'
+import { createSwapHeader, createTriggerHeader, extractFragment } from '../utils.js'
+import { LocationInput, SwapInput, TriggerInput } from '../types.js'
 
 declare module '@adonisjs/core/http' {
   interface Request {
@@ -46,11 +47,11 @@ declare module '@adonisjs/core/http' {
     /**
      * allows you to do a client-side redirect that does not do a full page reload
      */
-    location: (target: string) => HtmxRenderer
+    location: (target: LocationInput) => HtmxRenderer
     /**
      * pushes a new url into the history stack
      */
-    pushUrl: (url: string) => HtmxRenderer
+    pushUrl: (url: string | false) => HtmxRenderer
     /**
      * can be used to do a client-side redirect to a new location
      */
@@ -58,7 +59,7 @@ declare module '@adonisjs/core/http' {
     /**
      * replaces the current URL in the location bar
      */
-    replaceUrl: (url: string) => HtmxRenderer
+    replaceUrl: (url: string | false) => HtmxRenderer
     /**
      * if set to “true” the client-side will do a full refresh of the page
      */
@@ -66,13 +67,11 @@ declare module '@adonisjs/core/http' {
     /**
      * allows you to specify how the response will be swapped. See hx-swap for possible values
      */
-    reswap: (swap: string) => HtmxRenderer
+    reswap: (swap: SwapInput) => HtmxRenderer
     /**
      * a CSS selector that updates the target of the content update to a different element on the page
      */
-
     retarget: (cssSelector: string) => HtmxRenderer
-
     /**
      * a CSS selector that allows you to choose which part of the response is used to be swapped in. Overrides an existing hx-select on the triggering element
      */
@@ -80,15 +79,15 @@ declare module '@adonisjs/core/http' {
     /**
      * allows you to trigger client-side events
      */
-    trigger: (trigger: string) => HtmxRenderer
+    trigger: (trigger: TriggerInput) => HtmxRenderer
     /**
      * allows you to trigger client-side events after the settle step
      */
-    triggerAfterSettle: (trigger: string) => HtmxRenderer
+    triggerAfterSettle: (trigger: TriggerInput) => HtmxRenderer
     /**
      * allows you to trigger client-side events after the swap step
      */
-    triggerAfterSwap: (trigger: string) => HtmxRenderer
+    triggerAfterSwap: (trigger: TriggerInput) => HtmxRenderer
   }
   interface HttpContext {
     /**
@@ -143,28 +142,35 @@ export default class HtmxEdgeServiceProvider {
       })
 
       const htmx = Object.assign(renderer, {
-        location: (url: string) => {
-          this.response.header(HTMXResponseHeader.Location, url)
+        location: (url: LocationInput) => {
+          let header: string
+          if (typeof url === 'string') {
+            header = url
+          } else {
+            header = JSON.stringify(url)
+          }
+          this.response.header(HTMXResponseHeader.Location, header)
           return htmx
         },
-        pushUrl: (url: string) => {
-          this.response.header(HTMXResponseHeader.PushUrl, url)
+        pushUrl: (url: string | false) => {
+          this.response.header(HTMXResponseHeader.PushUrl, url.toString())
           return htmx
         },
         redirect: (url: string) => {
           this.response.header(HTMXResponseHeader.Redirect, url)
           return htmx
         },
-        replaceUrl: (url: string) => {
-          this.response.header(HTMXResponseHeader.ReplaceUrl, url)
+        replaceUrl: (url: string | false) => {
+          this.response.header(HTMXResponseHeader.ReplaceUrl, url.toString())
           return htmx
         },
         refresh: () => {
           this.response.header(HTMXResponseHeader.Refresh, true)
           return htmx
         },
-        reswap: (swap: string) => {
-          this.response.header(HTMXResponseHeader.Reswap, swap)
+        reswap: (swap: SwapInput) => {
+          const header = createSwapHeader(swap)
+          this.response.header(HTMXResponseHeader.Reswap, header)
           return htmx
         },
         retarget: (cssSelector: string) => {
@@ -175,16 +181,22 @@ export default class HtmxEdgeServiceProvider {
           this.response.header(HTMXResponseHeader.Reselect, cssSelector)
           return htmx
         },
-        trigger: (trigger: string) => {
-          this.response.header(HTMXResponseHeader.Trigger, trigger)
+        trigger: (trigger: TriggerInput) => {
+          const currentHeader = this.response.getHeader(HTMXResponseHeader.Trigger)
+          const header = createTriggerHeader(trigger, currentHeader?.toString())
+          this.response.header(HTMXResponseHeader.Trigger, header)
           return htmx
         },
-        triggerAfterSettle: (trigger: string) => {
-          this.response.header(HTMXResponseHeader.TriggerAfterSettle, trigger)
+        triggerAfterSettle: (trigger: TriggerInput) => {
+          const currentHeader = this.response.getHeader(HTMXResponseHeader.TriggerAfterSettle)
+          const header = createTriggerHeader(trigger, currentHeader?.toString())
+          this.response.header(HTMXResponseHeader.TriggerAfterSettle, header)
           return htmx
         },
-        triggerAfterSwap: (trigger: string) => {
-          this.response.header(HTMXResponseHeader.TriggerAfterSwap, trigger)
+        triggerAfterSwap: (trigger: TriggerInput) => {
+          const currentHeader = this.response.getHeader(HTMXResponseHeader.TriggerAfterSwap)
+          const header = createTriggerHeader(trigger, currentHeader?.toString())
+          this.response.header(HTMXResponseHeader.TriggerAfterSwap, header)
           return htmx
         },
       })
