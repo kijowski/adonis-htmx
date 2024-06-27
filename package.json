@@ -1,6 +1,6 @@
 {
   "name": "adonis-htmx",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "HTMX helpers and JSX renderer for the Adonis web framework",
   "type": "module",
   "main": "build/index.js",
