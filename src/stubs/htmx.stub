@@ -3,7 +3,7 @@
     to: app.makePath('config/htmx.ts')
   })
 }}}
-import { HtmxConfig } from 'adonis-edge-htmx'
+import { HtmxConfig } from 'adonis-htmx/types'
 import { DefaultLayout } from '../resources/views/layouts/default.js'
 
 const htmxConfig: HtmxConfig = {

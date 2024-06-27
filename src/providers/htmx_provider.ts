@@ -130,13 +130,13 @@ declare module '@adonisjs/core/http' {
   }
   interface HttpContext {
     /**
-     * Edgejs renderer enhanced with functions tailored for HTMX
+     * JSX renderer enhanced with functions tailored for HTMX
      */
     htmx: HtmxRenderer
   }
 }
 
-export default class HtmxEdgeServiceProvider {
+export default class HtmxServiceProvider {
   constructor(protected app: ApplicationService) {}
 
   async boot() {
