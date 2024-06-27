@@ -3,7 +3,7 @@
     to: app.makePath('resources/views/layouts/default.tsx')
   })
 }}}
-import { Html, PropsWithChildren } from 'adonisjsx'
+import { Html, PropsWithChildren } from 'adonis-htmx'
 
 export function DefaultLayout({ children }: PropsWithChildren) {
   return (
