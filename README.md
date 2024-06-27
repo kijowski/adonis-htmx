@@ -268,8 +268,8 @@ Huge shoutouts to [adonisjsx](https://github.com/macieklad/adonisjsx) which is a
 [typescript-image]: https://img.shields.io/badge/Typescript-294E80.svg?style=for-the-badge&logo=typescript
 [typescript-url]: "typescript"
 
-[license-image]: https://img.shields.io/npm/l/adonis-edge-htmx?color=blueviolet&style=for-the-badge
+[license-image]: https://img.shields.io/npm/l/adonis-htmx?color=blueviolet&style=for-the-badge
 [license-url]: LICENSE.md 'license'
 
-[npm-image]: https://img.shields.io/npm/v/adonis-edge-htmx.svg?style=for-the-badge&logo=npm
-[npm-url]: https://npmjs.org/package/adonis-edge-htmx 'npm'
+[npm-image]: https://img.shields.io/npm/v/adonis-htmx.svg?style=for-the-badge&logo=npm
+[npm-url]: https://npmjs.org/package/adonis-htmx 'npm'
