@@ -20,7 +20,7 @@
   },
   "scripts": {
     "clean": "del-cli build",
-    "copy-stubs": "copyfiles \"src/stubs/**/*.stub\" build",
+    "copy-stubs": "copyfiles -u 2 \"src/stubs/**/*.stub\" build",
     "typecheck": "tsc --noEmit",
     "precompile": "npm run lint && npm run clean",
     "compile": "tsup-node && tsc --emitDeclarationOnly --declaration",
