@@ -1,3 +1,5 @@
+import type { Component } from '@kitajs/html'
+
 export type LocationInput =
   | string
   | {
@@ -42,3 +44,7 @@ export type SwapInput =
       focusScroll?: boolean
     }
 export type TriggerInput = string | Record<string, any>
+
+export interface HtmxConfig {
+  defaultLayout?: Component
+}

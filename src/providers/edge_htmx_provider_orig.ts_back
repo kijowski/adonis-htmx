@@ -1,6 +1,6 @@
-import { HttpContext, Request } from '@adonisjs/core/http'
+import { Request, Response } from '@adonisjs/core/http'
 import { ApplicationService } from '@adonisjs/core/types'
-import edge, { Edge } from 'edge.js'
+import edge from 'edge.js'
 import { HTMXRequestHeader, HTMXResponseHeader } from '../headers.js'
 import { fragmentTag } from '../tags/fragment.js'
 import { createSwapHeader, createTriggerHeader, extractFragment } from '../utils.js'
@@ -43,57 +43,51 @@ declare module '@adonisjs/core/http' {
     }
   }
 
-  interface HtmxRenderer extends ReturnType<Edge['createRenderer']> {
+  interface Response {
     /**
      * allows you to do a client-side redirect that does not do a full page reload
      */
-    location: (target: LocationInput) => HtmxRenderer
+    htmxLocation: (target: LocationInput) => Response
     /**
      * pushes a new url into the history stack
      */
-    pushUrl: (url: string | false) => HtmxRenderer
+    htmxPushUrl: (url: string | false) => Response
     /**
      * can be used to do a client-side redirect to a new location
      */
-    redirect: (url: string) => HtmxRenderer
+    htmxRedirect: (url: string) => Response
     /**
      * replaces the current URL in the location bar
      */
-    replaceUrl: (url: string | false) => HtmxRenderer
+    htmxReplaceUrl: (url: string | false) => Response
     /**
      * if set to “true” the client-side will do a full refresh of the page
      */
-    refresh: () => HtmxRenderer
+    htmxRefresh: () => Response
     /**
      * allows you to specify how the response will be swapped. See hx-swap for possible values
      */
-    reswap: (swap: SwapInput) => HtmxRenderer
+    htmxReswap: (swap: SwapInput) => Response
     /**
      * a CSS selector that updates the target of the content update to a different element on the page
      */
-    retarget: (cssSelector: string) => HtmxRenderer
+    htmxRetarget: (cssSelector: string) => Response
     /**
      * a CSS selector that allows you to choose which part of the response is used to be swapped in. Overrides an existing hx-select on the triggering element
      */
-    reselect: (cssSelector: string) => HtmxRenderer
+    htmxReselect: (cssSelector: string) => Response
     /**
      * allows you to trigger client-side events
      */
-    trigger: (trigger: TriggerInput) => HtmxRenderer
+    htmxTrigger: (trigger: TriggerInput) => Response
     /**
      * allows you to trigger client-side events after the settle step
      */
-    triggerAfterSettle: (trigger: TriggerInput) => HtmxRenderer
+    htmxTriggerAfterSettle: (trigger: TriggerInput) => Response
     /**
      * allows you to trigger client-side events after the swap step
      */
-    triggerAfterSwap: (trigger: TriggerInput) => HtmxRenderer
-  }
-  interface HttpContext {
-    /**
-     * Edgejs renderer enhanced with functions tailored for HTMX
-     */
-    htmx: HtmxRenderer
+    htmxTriggerAfterSwap: (trigger: TriggerInput) => Response
   }
 }
 
@@ -136,72 +130,61 @@ export default class HtmxEdgeServiceProvider {
       }
     })
 
-    HttpContext.getter('htmx', function (this: HttpContext) {
-      const renderer = edge.createRenderer().share({
-        request: this.request,
-      })
+    Response.macro('htmxLocation', function (this: Response, url: LocationInput) {
+      let header: string
+      if (typeof url === 'string') {
+        header = url
+      } else {
+        header = JSON.stringify(url)
+      }
+      return this.header(HTMXResponseHeader.Location, header)
+    })
 
-      const htmx = Object.assign(renderer, {
-        location: (url: LocationInput) => {
-          let header: string
-          if (typeof url === 'string') {
-            header = url
-          } else {
-            header = JSON.stringify(url)
-          }
-          this.response.header(HTMXResponseHeader.Location, header)
-          return htmx
-        },
-        pushUrl: (url: string | false) => {
-          this.response.header(HTMXResponseHeader.PushUrl, url.toString())
-          return htmx
-        },
-        redirect: (url: string) => {
-          this.response.header(HTMXResponseHeader.Redirect, url)
-          return htmx
-        },
-        replaceUrl: (url: string | false) => {
-          this.response.header(HTMXResponseHeader.ReplaceUrl, url.toString())
-          return htmx
-        },
-        refresh: () => {
-          this.response.header(HTMXResponseHeader.Refresh, true)
-          return htmx
-        },
-        reswap: (swap: SwapInput) => {
-          const header = createSwapHeader(swap)
-          this.response.header(HTMXResponseHeader.Reswap, header)
-          return htmx
-        },
-        retarget: (cssSelector: string) => {
-          this.response.header(HTMXResponseHeader.Retarget, cssSelector)
-          return htmx
-        },
-        reselect: (cssSelector: string) => {
-          this.response.header(HTMXResponseHeader.Reselect, cssSelector)
-          return htmx
-        },
-        trigger: (trigger: TriggerInput) => {
-          const currentHeader = this.response.getHeader(HTMXResponseHeader.Trigger)
-          const header = createTriggerHeader(trigger, currentHeader?.toString())
-          this.response.header(HTMXResponseHeader.Trigger, header)
-          return htmx
-        },
-        triggerAfterSettle: (trigger: TriggerInput) => {
-          const currentHeader = this.response.getHeader(HTMXResponseHeader.TriggerAfterSettle)
-          const header = createTriggerHeader(trigger, currentHeader?.toString())
-          this.response.header(HTMXResponseHeader.TriggerAfterSettle, header)
-          return htmx
-        },
-        triggerAfterSwap: (trigger: TriggerInput) => {
-          const currentHeader = this.response.getHeader(HTMXResponseHeader.TriggerAfterSwap)
-          const header = createTriggerHeader(trigger, currentHeader?.toString())
-          this.response.header(HTMXResponseHeader.TriggerAfterSwap, header)
-          return htmx
-        },
-      })
+    Response.macro('htmxPushUrl', function (this: Response, url: string | false) {
+      return this.header(HTMXResponseHeader.PushUrl, url.toString())
+    })
 
-      return htmx
+    Response.macro('htmxRedirect', function (this: Response, url: string) {
+      return this.header(HTMXResponseHeader.Redirect, url)
+    })
+
+    Response.macro('htmxReplaceUrl', function (this: Response, url: string | false) {
+      return this.header(HTMXResponseHeader.ReplaceUrl, url.toString())
+    })
+
+    Response.macro('htmxRefresh', function (this: Response) {
+      return this.header(HTMXResponseHeader.Refresh, true)
+    })
+
+    Response.macro('htmxReswap', function (this: Response, swap: SwapInput) {
+      const header = createSwapHeader(swap)
+      return this.header(HTMXResponseHeader.Reswap, header)
+    })
+
+    Response.macro('htmxRetarget', function (this: Response, cssSelector: string) {
+      return this.header(HTMXResponseHeader.Retarget, cssSelector)
+    })
+
+    Response.macro('htmxReselect', function (this: Response, cssSelector: string) {
+      return this.header(HTMXResponseHeader.Reselect, cssSelector)
+    })
+
+    Response.macro('htmxTrigger', function (this: Response, trigger: TriggerInput) {
+      const currentHeader = this.response.getHeader(HTMXResponseHeader.Trigger)
+      const header = createTriggerHeader(trigger, currentHeader?.toString())
+      return this.header(HTMXResponseHeader.Trigger, header)
+    })
+
+    Response.macro('htmxTriggerAfterSettle', function (this: Response, trigger: TriggerInput) {
+      const currentHeader = this.response.getHeader(HTMXResponseHeader.TriggerAfterSettle)
+      const header = createTriggerHeader(trigger, currentHeader?.toString())
+      return this.header(HTMXResponseHeader.TriggerAfterSettle, header)
+    })
+
+    Response.macro('htmxTriggerAfterSwap', function (this: Response, trigger: TriggerInput) {
+      const currentHeader = this.response.getHeader(HTMXResponseHeader.TriggerAfterSwap)
+      const header = createTriggerHeader(trigger, currentHeader?.toString())
+      return this.header(HTMXResponseHeader.TriggerAfterSwap, header)
     })
   }
 }

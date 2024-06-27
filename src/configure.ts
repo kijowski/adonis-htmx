@@ -1,4 +1,5 @@
 import type Configure from '@adonisjs/core/commands/configure'
+import { stubsRoot } from './stubs/main.js'
 
 export async function configure(command: Configure) {
   const codemods = await command.createCodemods()
@@ -6,4 +7,7 @@ export async function configure(command: Configure) {
   await codemods.updateRcFile((rcFile) => {
     rcFile.addProvider('adonis-edge-htmx/provider')
   })
+
+  await codemods.makeUsingStub(stubsRoot, 'htmx.stub', {})
+  await codemods.makeUsingStub(stubsRoot, 'default_layout.stub', {})
 }

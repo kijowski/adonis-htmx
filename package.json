@@ -1,7 +1,7 @@
 {
-  "name": "adonis-edge-htmx",
+  "name": "adonis-htmx",
   "version": "0.1.0-0",
-  "description": "HTMX helpers for the Adonis web server and Edge template engine",
+  "description": "HTMX helpers and JSX renderer for the Adonis web framework",
   "type": "module",
   "main": "build/index.js",
   "files": [
@@ -13,17 +13,19 @@
     ".": "./build/index.js",
     ".types": "./build/src/types.js",
     "./headers": "./build/src/headers.js",
-    "./provider": "./build/src/providers/edge_htmx_provider.js"
+    "./provider": "./build/src/providers/htmx_provider.js"
   },
   "engines": {
     "node": ">=18.16.0"
   },
   "scripts": {
     "clean": "del-cli build",
+    "copy-stubs": "copyfiles \"src/stubs/**/*.stub\" build",
     "typecheck": "tsc --noEmit",
     "precompile": "npm run lint && npm run clean",
     "compile": "tsup-node && tsc --emitDeclarationOnly --declaration",
     "build": "npm run compile",
+    "postbuild": "npm run copy-stubs",
     "prepublishOnly": "npm run build",
     "lint": "eslint . --ext=.ts",
     "format": "prettier --write .",
@@ -32,13 +34,18 @@
     "test": "node --enable-source-maps --loader=ts-node/esm bin/test.ts"
   },
   "keywords": [
-    "edge.js",
-    "edge-templating",
+    "htmx",
+    "tsx-templating",
     "adonis",
     "adonisjs"
   ],
   "author": "Michał Kijowski",
   "license": "MIT",
+  "dependencies": {
+    "@adonisjs/vite": "^3.0.0",
+    "@kitajs/html": "^4.1.0",
+    "@kitajs/ts-html-plugin": "^4.0.1"
+  },
   "devDependencies": {
     "@adonisjs/assembler": "^7.2.3",
     "@adonisjs/eslint-config": "^1.2.1",
@@ -48,8 +55,8 @@
     "@japa/runner": "^3.1.1",
     "@swc/core": "^1.3.102",
     "@types/node": "^20.10.6",
+    "copyfiles": "^2.4.1",
     "del-cli": "^5.1.0",
-    "edge.js": "^6.0.1",
     "eslint": "^8.56.0",
     "np": "^9.2.0",
     "prettier": "^3.1.1",
@@ -58,17 +65,16 @@
     "typescript": "^5.3.3"
   },
   "peerDependencies": {
-    "@adonisjs/core": "^6.0.0",
-    "edge.js": "^6.0.0"
+    "@adonisjs/core": "^6.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kijowski/adonis-edge-htmx.git"
+    "url": "git+https://github.com/kijowski/adonis-htmx.git"
   },
   "bugs": {
-    "url": "https://github.com/kijowski/adonis-edge-htmx/issues"
+    "url": "https://github.com/kijowski/adonis-htmx/issues"
   },
-  "homepage": "https://github.com/kijowski/adonis-edge-htmx#readme",
+  "homepage": "https://github.com/kijowski/adonis-htmx#readme",
   "prettier": "@adonisjs/prettier-config",
   "eslintConfig": {
     "extends": "@adonisjs/eslint-config/package"
@@ -78,7 +84,7 @@
       "./index.ts",
       "./src/headers.ts",
       "./src/types.ts",
-      "./src/providers/edge_htmx_provider.ts"
+      "./src/providers/htmx_provider.ts"
     ],
     "outDir": "./build",
     "clean": true,
