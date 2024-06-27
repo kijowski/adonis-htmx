@@ -40,8 +40,17 @@ After installing package, extend your tsconfig.json compiler options:
 }
 ```
 
+### Register kitaJS
+Once done, edit the `bin/server.ts` file to register Kita.
+
+```ts
+import 'reflect-metadata'
+import '@kitajs/html/register.js'
+import { Ignitor, prettyPrintError } from '@adonisjs/core'
+```
+
 ### Update useAsyncLocalStorage
-You should also update your `app.ts` `useAsyncLocalStorage` to true if you want to access helpers that depend on `HttpContext` to work. (Currently only `csrfField`)
+You should also update your `config/app.ts` `useAsyncLocalStorage` to true if you want to access helpers that depend on `HttpContext` to work. (Currently only `csrfField`)
 
 ## Api
 
