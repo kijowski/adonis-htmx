@@ -7,7 +7,8 @@ Better HTMX development with AdonisJS framework.
 ## Features
 - JSX/TSX rendering engine. Adapted from [adonisjsx](https://github.com/macieklad/adonisjsx), based on [KitaJS](https://github.com/kitajs/html)
 - `Request` and `Response` extensions for HTMX headers management 
-- Simple rendering of both pages (with default root layout) and single components (useful in HTMX development)
+- Prefers explicit rendering - does not wrap rendered components in root layout implicitly 
+- Removes the need to ALS - if you need data attached to `HttpContext` you can extract it with extractor function defined in config that runs as a part of rendering pipeline
  
 ## Instalation
 Install and configure it in two steps.
@@ -49,9 +50,35 @@ import '@kitajs/html/register.js'
 import { Ignitor, prettyPrintError } from '@adonisjs/core'
 ```
 
-### Update useAsyncLocalStorage
-You should also update your `config/app.ts` `useAsyncLocalStorage` to true if you want to access helpers that depend on `HttpContext` to work. (Currently only `csrfField`)
+### Configure injected props
+You can edit `extract` function defined in `config/htmx.ts` file and add additional fields computed from `HttpContext` that will be injected into components rendered by `adonis-htmx` via `adonis` prop.
+```ts
+const extract = (context: HttpContext) => {
+  // Inject csrfToken via adonis prop
+  const csrf: string = context.request.csrfToken
 
+  // Inject isHtmx via adonis prop
+  const isHtmx: boolean = !!context.request.htmx
+  return {
+    csrf,
+    isHtmx,
+  }
+}
+```
+Then you can use `AdonisProps` and `AdonisComponent` to have it typed correctly
+```tsx
+import { AdonisComponent } from 'adonis-htmx'
+
+function MyComponent({ myProp, adonis }): AdonisComponent<{ myProp: string }> {
+  return (
+    <ul>
+      <li>{ myProp }</li>
+      <li>{ adonis.csrf }</li>
+      <li>{ adonis.isHtmx }</li>
+    </ul>
+  )
+}
+```
 ## Api
 
 ### Request
@@ -82,37 +109,34 @@ async function handle({ htmx }: HttpContext) {
 ```
 
 ### Rendering 
-`htmx` property gives you access to four methods for rendering JSX. These are:
-### `HttpContext.htmx.renderPage`
+`htmx` property gives you access to two methods for rendering JSX. These are:
+#### `HttpContext.htmx.render`
 ```tsx
-renderPage: async <TData extends Record<string, unknown>>(
+render: <TData extends Record<string, unknown>>(
   view: Component<TData> | Element | string,
-  data?: TData,
-  options?: { layout?: Component }
+  data?: TData
 ) => Promise<JSX.Element>
 ```
-This method lets you render your pages by wrapping your component with global layout (which you can override through options or change it globally in the `htmx.ts` config published by the package). 
+This method lets you render your components. 
 
 ```tsx
 // routes.tsx
-import { MyComponent, Layout } from '#components'
+import { MyComponent, } from '#components'
 
 route.get('/', async ({ htmx }) => {
-  return htmx(MyComponent)
+  return htmx.render(MyComponent)
   // If your component takes props, data option will be typed accordingly
-  return htmx(MyComponent, { name: 'John' }, {layout: Layout })
+  return htmx.render(MyComponent, { name: 'John' })
 })
 ```
 
-### `HttpContext.htmx.streamPage`
+#### `HttpContext.htmx.stream`
 ```tsx
-streamPage: <TData extends Record<string, unknown>>(
+stream: <TData extends Record<string, unknown>>(
   view: Component<TData & { rid?: number | string }>,
   data?: TData,
-  options?: {
-    layout?: Component
-    errorCallback?: (error: NodeJS.ErrnoException) => [string, number?]
-  }) => void
+  errorCallback?: (error: NodeJS.ErrnoException) => [string, number?]
+) => void
 ```
 
 You can `await` any data in the component normally, as they are not react components but just functions that are converted from syntax sugar into pure javascript. 
@@ -124,15 +148,15 @@ async function MyComponent() {
 }
 ```
 
-But you may want to show most of your UI instantly, and then stream only the parts that require async data. You can do that with `streamPage` method. It will render the component and then stream the async parts as they resolve. Underneath, this method uses AdonisJS streaming, so you do not return the result of the method, you just call it.
+But you may want to show most of your UI instantly, and then stream only the parts that require async data. You can do that with `stream` method. It will render the component and then stream the async parts as they resolve. Underneath, this method uses AdonisJS streaming, so you do not return the result of the method, you just call it.
 
-`streamPage` accepts optional `errorCallback` , which is called when an error occurs during streaming. By default, it will log the error and send 500 status code, but you can override it to handle errors in your own way. It comes directly from the framework [streaming methods](https://docs.adonisjs.com/guides/response#streaming-content). The method will also pass the render id to your component - through `rid` prop that you can pass to the `Suspense` component as unique identifier. If you want to, feel free to generate one yourself.
+`stream` accepts optional `errorCallback` , which is called when an error occurs during streaming. By default, it will log the error and send 500 status code, but you can override it to handle errors in your own way. It comes directly from the framework [streaming methods](https://docs.adonisjs.com/guides/response#streaming-content). The method will also pass the render id to your component - through `rid` prop that you can pass to the `Suspense` component as unique identifier. If you want to, feel free to generate one yourself.
 
 ```tsx
 import { Suspense } from 'adonis-htmx'
 
 router.get('/', async ({ htmx }) => {
-  htmx.streamPage(MyComponent, { errorCallback: (error) => ([`Rendering failed: ${error.message}`, 500]) })
+  htmx.stream(MyComponent, {}, (error) => ([`Rendering failed: ${error.message}`, 500]))
 })
 
 function MyComponent({ rid }) {
@@ -153,27 +177,8 @@ async function MyAsyncComponent() {
   return <div>{data}</div>
 }
 ```
-
-### `HttpContext.htmx.render`
-```tsx
-render: async <TData extends Record<string, unknown>>(
-  view: Component<TData> | Element | string,
-  data?: TData
-) => Promise<JSX.Element>
-```
-This is a convenience method for rendering JSX component without wrapping it in layout. 
-
-### `HttpContext.htmx.stream`
-```tsx
-stream: <TData extends Record<string, unknown>>(
-  view: Component<TData & { rid?: number | string }>,
-  data?: TData,
-  errorCallback?: (error: NodeJS.ErrnoException) => [string, number?]
-) => void
-```
-Analogous convenience method for streaming JSX components "bare".
-
-### `viteAssets`
+### Helper methods
+#### `viteAssets`
 ```tsx
 function viteAssets(entries: string[], attributes: Record<string, unknown> = {}): JSX.Element
 ```
@@ -205,7 +210,7 @@ function MyComponent() {
   )
 }
 ```
-### `viteReactRefresh`
+#### `viteReactRefresh`
 
 ```tsx
 function viteReactRefresh(): JSX.Element
@@ -231,23 +236,7 @@ function MyComponent() {
 }
 ```
 
-### `csrfField`
-With `@adonisjs/shield` installed, you can use `csrfField` method to generate a hidden input with csrf token.
-
-```tsx
-import { csrfField } from 'adonis-htmx'
-
-function Form() {
-  return (
-    <form>
-      {csrfField()}
-      <button>Submit</button>
-    </form>
-  )
-}
-```
-
-### `route`
+#### `route`
 You can use `route` method to generate urls for your routes. It works the same way as in edge templates.
 
 ```tsx

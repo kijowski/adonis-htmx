@@ -3,11 +3,29 @@
     to: app.makePath('config/htmx.ts')
   })
 }}}
+import { HttpContext } from '@adonisjs/core/http'
 import { HtmxConfig } from 'adonis-htmx/types'
-import { DefaultLayout } from '../resources/views/layouts/default.js'
+import { Component } from '@kitajs/html'
+
+const extract = (context: HttpContext) => {
+  // Inject csrfToken via adonis prop
+  // const csrf: string = context.request.csrfToken
+
+  // Inject isHtmx via adonis prop
+  // const isHtmx: boolean = !!context.request.htmx
+  return {
+  // csrf,
+  // isHtmx,
+  }
+}
 
 const htmxConfig: HtmxConfig = {
-  defaultLayout: DefaultLayout,
+  extract
+}
+
+declare module "adonis-htmx" {
+  type AdonisProps = ReturnType<typeof extract>
+  type AdonisComponent<T = {}> = Component<T & AdonisProps>
 }
 
 export default htmxConfig

@@ -9,5 +9,4 @@ export async function configure(command: Configure) {
   })
 
   await codemods.makeUsingStub(stubsRoot, 'htmx.stub', {})
-  await codemods.makeUsingStub(stubsRoot, 'default_layout.stub', {})
 }

@@ -1,4 +1,4 @@
-import type { Component } from '@kitajs/html'
+import { HttpContext } from '@adonisjs/core/http'
 
 export type LocationInput =
   | string
@@ -46,5 +46,5 @@ export type SwapInput =
 export type TriggerInput = string | Record<string, any>
 
 export interface HtmxConfig {
-  defaultLayout?: Component
+  extract: (context: HttpContext) => Record<string, unknown>
 }

@@ -106,27 +106,6 @@ declare module '@adonisjs/core/http' {
       data?: TData,
       errorCallback?: (error: NodeJS.ErrnoException) => [string, number?]
     ) => void
-
-    /**
-     * render jsx component
-     */
-    renderPage: <TData extends Record<string, unknown>>(
-      view: Component<TData> | Element | string,
-      data?: TData,
-      options?: { layout?: Component }
-    ) => Promise<JSX.Element>
-
-    /**
-     * stream jsx component
-     */
-    streamPage: <TData extends Record<string, unknown>>(
-      view: Component<TData & { rid?: number | string }>,
-      data?: TData,
-      options?: {
-        layout?: Component
-        errorCallback?: (error: NodeJS.ErrnoException) => [string, number?]
-      }
-    ) => void
   }
   interface HttpContext {
     /**
@@ -142,51 +121,14 @@ export default class HtmxServiceProvider {
   async boot() {
     const app = this.app
     HttpContext.getter('htmx', function (this: HttpContext) {
+      const extract = app.config.get<Function | undefined>('htmx.extract')
+
+      let adonis = {}
+      if (extract) {
+        adonis = extract(this)
+      }
+
       const htmx = {
-        renderPage: async <TData extends Record<string, unknown>>(
-          view: Component<TData> | Element | string,
-          data?: TData,
-          options?: { layout?: Component }
-        ) => {
-          const layout = options?.layout ?? app.config.get('htmx.pageLayout')
-          if (layout) {
-            if (typeof view === 'string' || view instanceof Promise) {
-              return layout({ ...data, children: view })
-            }
-
-            return layout({ ...data, children: view(data!) })
-          }
-
-          if (typeof view === 'string' || view instanceof Promise) {
-            return view
-          }
-
-          return view(data!)
-        },
-        streamPage: <TData extends Record<string, unknown>>(
-          view: Component<TData & { rid?: number | string }>,
-          data?: TData,
-          options?: {
-            layout?: Component
-            errorCallback?: (error: NodeJS.ErrnoException) => [string, number?]
-          }
-        ) => {
-          const layout = options?.layout ?? app.config.get('htmx.defaultLayout')
-
-          function markup(rid: number | string) {
-            if (layout) {
-              return layout({ ...data, children: view({ ...data!, rid }) })
-            }
-
-            return view({
-              ...data!,
-              rid,
-            })
-          }
-
-          this.response.header('Content-Type', 'text/html')
-          this.response.stream(renderToStream(markup), options?.errorCallback)
-        },
         render: async <TData extends Record<string, unknown>>(
           view: Component<TData> | Element | string,
           data?: TData
@@ -195,7 +137,7 @@ export default class HtmxServiceProvider {
             return view
           }
 
-          return view(data!)
+          return view({ ...data!, adonis })
         },
         stream: <TData extends Record<string, unknown>>(
           view: Component<TData & { rid?: number | string }>,
@@ -206,6 +148,7 @@ export default class HtmxServiceProvider {
             return view({
               ...data!,
               rid,
+              adonis,
             })
           }
 

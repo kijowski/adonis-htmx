@@ -1,6 +1,5 @@
 import { Html } from '@kitajs/html'
 import vite from '@adonisjs/vite/services/main'
-import { HttpContext } from '@adonisjs/core/http'
 import router from '@adonisjs/core/services/router'
 
 export async function viteAssets(entries: string[], attributes: Record<string, unknown> = {}) {
@@ -21,24 +20,6 @@ export function viteReactRefresh() {
   if (!script) return null
 
   return <tag of={script?.tag} {...script.attributes} />
-}
-
-export const csrf = {
-  field() {
-    const { request } = HttpContext.getOrFail()
-    // @ts-expect-error Shield package is not yet typed
-    return <input type="hidden" value={request.csrfToken} name="_csrf" />
-  },
-  token() {
-    const { request } = HttpContext.getOrFail()
-    // @ts-expect-error Shield package is not yet typed
-    return request.csrfToken
-  },
-  hxVals() {
-    const { request } = HttpContext.getOrFail()
-    // @ts-expect-error Shield package is not yet typed
-    return `{"_csrf": "${request.csrfToken}"}`
-  },
 }
 
 export function route(...args: Parameters<typeof router.makeUrl>) {
