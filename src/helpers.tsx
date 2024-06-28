@@ -37,7 +37,7 @@ export const csrf = {
   hxVals() {
     const { request } = HttpContext.getOrFail()
     // @ts-expect-error Shield package is not yet typed
-    return `_csrf": "${request.csrfToken}`
+    return `{_csrf": "${request.csrfToken}}`
   },
 }
 
