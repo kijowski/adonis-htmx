@@ -171,7 +171,7 @@ export default class HtmxServiceProvider {
             errorCallback?: (error: NodeJS.ErrnoException) => [string, number?]
           }
         ) => {
-          const layout = options?.layout ?? app.config.get('jsx.defaultLayout')
+          const layout = options?.layout ?? app.config.get('htmx.defaultLayout')
 
           function markup(rid: number | string) {
             if (layout) {

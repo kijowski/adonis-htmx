@@ -23,10 +23,22 @@ export function viteReactRefresh() {
   return <tag of={script?.tag} {...script.attributes} />
 }
 
-export function csrfField() {
-  const { request } = HttpContext.getOrFail()
-  // @ts-expect-error Shield package is not yet typed
-  return <input type="hidden" value={request.csrfToken} name="_csrf" />
+export const csrf = {
+  field() {
+    const { request } = HttpContext.getOrFail()
+    // @ts-expect-error Shield package is not yet typed
+    return <input type="hidden" value={request.csrfToken} name="_csrf" />
+  },
+  token() {
+    const { request } = HttpContext.getOrFail()
+    // @ts-expect-error Shield package is not yet typed
+    return request.csrfToken
+  },
+  hxVals() {
+    const { request } = HttpContext.getOrFail()
+    // @ts-expect-error Shield package is not yet typed
+    return `_csrf": "${request.csrfToken}`
+  },
 }
 
 export function route(...args: Parameters<typeof router.makeUrl>) {
