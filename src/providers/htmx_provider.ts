@@ -1,11 +1,9 @@
-import { HttpContext } from '@adonisjs/core/http'
+import { Response } from '@adonisjs/core/http'
 import { ApplicationService } from '@adonisjs/core/types'
+import router from '@adonisjs/core/services/router'
 import { HTMXResponseHeader } from '../headers.js'
 import { createSwapHeader, createTriggerHeader } from '../utils.js'
-import { LocationInput, SwapInput, TriggerInput } from '../types.js'
-import { renderToStream } from '@kitajs/html/suspense.js'
-import { Component } from '@kitajs/html'
-import Element = JSX.Element
+import { LocationInput, RouteDefinition, SwapInput, TriggerInput } from '../types.js'
 
 declare module '@adonisjs/core/http' {
   interface Request {
@@ -44,178 +42,118 @@ declare module '@adonisjs/core/http' {
     }
   }
 
-  interface HtmxRenderer {
+  interface Response {
     /**
      * allows you to do a client-side redirect that does not do a full page reload
      */
-    location: (target: LocationInput) => HtmxRenderer
+    htmxLocation: (target: LocationInput) => Response
     /**
      * pushes a new url into the history stack
      */
-    pushUrl: (url: string | false) => HtmxRenderer
+    htmxPushUrl: (url: string | RouteDefinition | false) => Response
     /**
      * can be used to do a client-side redirect to a new location
      */
-    redirect: (url: string) => HtmxRenderer
+    htmxRedirect: (url: string | RouteDefinition) => Response
     /**
      * replaces the current URL in the location bar
      */
-    replaceUrl: (url: string | false) => HtmxRenderer
+    htmxReplaceUrl: (url: string | RouteDefinition | false) => Response
     /**
      * if set to “true” the client-side will do a full refresh of the page
      */
-    refresh: () => HtmxRenderer
+    htmxRefresh: () => Response
     /**
      * allows you to specify how the response will be swapped. See hx-swap for possible values
      */
-    reswap: (swap: SwapInput) => HtmxRenderer
+    htmxReswap: (swap: SwapInput) => Response
     /**
      * a CSS selector that updates the target of the content update to a different element on the page
      */
-    retarget: (cssSelector: string) => HtmxRenderer
+    htmxRetarget: (cssSelector: string) => Response
     /**
      * a CSS selector that allows you to choose which part of the response is used to be swapped in. Overrides an existing hx-select on the triggering element
      */
-    reselect: (cssSelector: string) => HtmxRenderer
+    htmxReselect: (cssSelector: string) => Response
     /**
      * allows you to trigger client-side events
      */
-    trigger: (trigger: TriggerInput) => HtmxRenderer
+    htmxTrigger: (trigger: TriggerInput) => Response
     /**
      * allows you to trigger client-side events after the settle step
      */
-    triggerAfterSettle: (trigger: TriggerInput) => HtmxRenderer
+    htmxTriggerAfterSettle: (trigger: TriggerInput) => Response
     /**
      * allows you to trigger client-side events after the swap step
      */
-    triggerAfterSwap: (trigger: TriggerInput) => HtmxRenderer
-
-    /**
-     * render jsx component
-     */
-    render: <TData extends Record<string, unknown>>(
-      view: Component<TData> | Element | string,
-      data?: TData
-    ) => Promise<JSX.Element>
-
-    /**
-     * stream jsx component
-     */
-    stream: <TData extends Record<string, unknown>>(
-      view: Component<TData & { rid?: number | string }>,
-      data?: TData,
-      errorCallback?: (error: NodeJS.ErrnoException) => [string, number?]
-    ) => void
+    htmxTriggerAfterSwap: (trigger: TriggerInput) => Response
   }
-  interface HttpContext {
-    /**
-     * JSX renderer enhanced with functions tailored for HTMX
-     */
-    htmx: HtmxRenderer
+}
+
+function inputUrlToString(url: string | RouteDefinition | false) {
+  if (Array.isArray(url)) {
+    return router.makeUrl(...url)
   }
+  return url.toString()
 }
 
 export default class HtmxServiceProvider {
   constructor(protected app: ApplicationService) {}
 
   async boot() {
-    const app = this.app
-    HttpContext.getter('htmx', function (this: HttpContext) {
-      const extract = app.config.get<Function | undefined>('htmx.extract')
-
-      let adonis = {}
-      if (extract) {
-        adonis = extract(this)
+    Response.macro('htmxLocation', function (this: Response, url: LocationInput): Response {
+      let value: string
+      if (Array.isArray(url)) {
+        value = router.makeUrl(...url)
+      } else if (typeof url === 'string') {
+        value = url
+      } else {
+        value = JSON.stringify({ ...url, path: inputUrlToString(url.path) })
       }
-
-      const htmx = {
-        render: async <TData extends Record<string, unknown>>(
-          view: Component<TData> | Element | string,
-          data?: TData
-        ) => {
-          if (typeof view === 'string' || view instanceof Promise) {
-            return view
-          }
-
-          return view({ ...data!, adonis })
-        },
-        stream: <TData extends Record<string, unknown>>(
-          view: Component<TData & { rid?: number | string }>,
-          data?: TData,
-          errorCallback?: (error: NodeJS.ErrnoException) => [string, number?]
-        ) => {
-          function markup(rid: number | string) {
-            return view({
-              ...data!,
-              rid,
-              adonis,
-            })
-          }
-
-          this.response.header('Content-Type', 'text/html')
-          this.response.stream(renderToStream(markup), errorCallback)
-        },
-
-        location: (url: LocationInput) => {
-          let header: string
-          if (typeof url === 'string') {
-            header = url
-          } else {
-            header = JSON.stringify(url)
-          }
-          this.response.header(HTMXResponseHeader.Location, header)
-          return htmx
-        },
-        pushUrl: (url: string | false) => {
-          this.response.header(HTMXResponseHeader.PushUrl, url.toString())
-          return htmx
-        },
-        redirect: (url: string) => {
-          this.response.header(HTMXResponseHeader.Redirect, url)
-          return htmx
-        },
-        replaceUrl: (url: string | false) => {
-          this.response.header(HTMXResponseHeader.ReplaceUrl, url.toString())
-          return htmx
-        },
-        refresh: () => {
-          this.response.header(HTMXResponseHeader.Refresh, true)
-          return htmx
-        },
-        reswap: (swap: SwapInput) => {
-          const header = createSwapHeader(swap)
-          this.response.header(HTMXResponseHeader.Reswap, header)
-          return htmx
-        },
-        retarget: (cssSelector: string) => {
-          this.response.header(HTMXResponseHeader.Retarget, cssSelector)
-          return htmx
-        },
-        reselect: (cssSelector: string) => {
-          this.response.header(HTMXResponseHeader.Reselect, cssSelector)
-          return htmx
-        },
-        trigger: (trigger: TriggerInput) => {
-          const currentHeader = this.response.getHeader(HTMXResponseHeader.Trigger)
-          const header = createTriggerHeader(trigger, currentHeader?.toString())
-          this.response.header(HTMXResponseHeader.Trigger, header)
-          return htmx
-        },
-        triggerAfterSettle: (trigger: TriggerInput) => {
-          const currentHeader = this.response.getHeader(HTMXResponseHeader.TriggerAfterSettle)
-          const header = createTriggerHeader(trigger, currentHeader?.toString())
-          this.response.header(HTMXResponseHeader.TriggerAfterSettle, header)
-          return htmx
-        },
-        triggerAfterSwap: (trigger: TriggerInput) => {
-          const currentHeader = this.response.getHeader(HTMXResponseHeader.TriggerAfterSwap)
-          const header = createTriggerHeader(trigger, currentHeader?.toString())
-          this.response.header(HTMXResponseHeader.TriggerAfterSwap, header)
-          return htmx
-        },
+      return this.header(HTMXResponseHeader.Location, value)
+    })
+    Response.macro('htmxPushUrl', function (this: Response, url: string | RouteDefinition | false) {
+      const value = inputUrlToString(url)
+      return this.header(HTMXResponseHeader.PushUrl, value)
+    })
+    Response.macro('htmxRedirect', function (this: Response, url: string | RouteDefinition) {
+      const value = inputUrlToString(url)
+      return this.header(HTMXResponseHeader.Redirect, value)
+    })
+    Response.macro(
+      'htmxReplaceUrl',
+      function (this: Response, url: string | RouteDefinition | false) {
+        const value = inputUrlToString(url)
+        return this.header(HTMXResponseHeader.ReplaceUrl, value)
       }
-
-      return htmx
+    )
+    Response.macro('htmxRefresh', function (this: Response) {
+      return this.header(HTMXResponseHeader.Refresh, true)
+    })
+    Response.macro('htmxReswap', function (this: Response, swap: SwapInput) {
+      const header = createSwapHeader(swap)
+      return this.header(HTMXResponseHeader.Reswap, header)
+    })
+    Response.macro('htmxRetarget', function (this: Response, cssSelector: string) {
+      return this.header(HTMXResponseHeader.Retarget, cssSelector)
+    })
+    Response.macro('htmxReselect', function (this: Response, cssSelector: string) {
+      return this.header(HTMXResponseHeader.Reselect, cssSelector)
+    })
+    Response.macro('htmxTrigger', function (this: Response, trigger: TriggerInput) {
+      const currentHeader = this.getHeader(HTMXResponseHeader.Trigger)
+      const header = createTriggerHeader(trigger, currentHeader?.toString())
+      return this.header(HTMXResponseHeader.Trigger, header)
+    })
+    Response.macro('htmxTriggerAfterSettle', function (this: Response, trigger: TriggerInput) {
+      const currentHeader = this.getHeader(HTMXResponseHeader.TriggerAfterSettle)
+      const header = createTriggerHeader(trigger, currentHeader?.toString())
+      return this.header(HTMXResponseHeader.TriggerAfterSettle, header)
+    })
+    Response.macro('htmxTriggerAfterSwap', function (this: Response, trigger: TriggerInput) {
+      const currentHeader = this.getHeader(HTMXResponseHeader.TriggerAfterSwap)
+      const header = createTriggerHeader(trigger, currentHeader?.toString())
+      return this.header(HTMXResponseHeader.TriggerAfterSwap, header)
     })
   }
 }

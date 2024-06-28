@@ -1,7 +1,7 @@
 {
   "name": "adonis-htmx",
   "version": "0.3.4",
-  "description": "HTMX helpers and JSX renderer for the Adonis web framework",
+  "description": "HTMX helpers for the Adonis web framework",
   "type": "module",
   "main": "build/index.js",
   "files": [
@@ -35,23 +35,18 @@
   },
   "keywords": [
     "htmx",
-    "tsx-templating",
     "adonis",
     "adonisjs"
   ],
   "author": "Michał Kijowski",
   "license": "MIT",
-  "dependencies": {
-    "@adonisjs/vite": "^3.0.0",
-    "@kitajs/html": "^4.1.0",
-    "@kitajs/ts-html-plugin": "^4.0.1"
-  },
   "devDependencies": {
     "@adonisjs/assembler": "^7.2.3",
+    "@adonisjs/core": "^6.0.0",
     "@adonisjs/eslint-config": "^1.2.1",
     "@adonisjs/prettier-config": "^1.2.1",
     "@adonisjs/tsconfig": "^1.2.1",
-    "@japa/assert": "^2.1.0",
+    "@japa/assert": "^3.0.0",
     "@japa/runner": "^3.1.1",
     "@swc/core": "^1.3.102",
     "@types/node": "^20.10.6",
@@ -62,10 +57,7 @@
     "prettier": "^3.1.1",
     "ts-node": "^10.9.2",
     "tsup": "^8.0.1",
-    "typescript": "^5.3.3"
-  },
-  "peerDependencies": {
-    "@adonisjs/core": "^6.0.0"
+    "typescript": "~5.4.0"
   },
   "repository": {
     "type": "git",

@@ -1,10 +1,14 @@
-import { HttpContext } from '@adonisjs/core/http'
+import type { HttpContext } from '@adonisjs/core/http'
+import type router from '@adonisjs/core/services/router'
+
+export type RouteDefinition = Parameters<typeof router.makeUrl>
 
 export type LocationInput =
   | string
+  | RouteDefinition
   | {
       /** url to load the response from */
-      path: string
+      path: string | RouteDefinition
       /** the source element of the request */
       source?: string
       /** an event that “triggered” the request */

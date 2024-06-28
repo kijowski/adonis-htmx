@@ -2,11 +2,6 @@
   "extends": "@adonisjs/tsconfig/tsconfig.package.json",
   "compilerOptions": {
     "rootDir": "./",
-    "outDir": "./build",
-    "moduleResolution": "nodenext",
-    "jsx": "react",
-    "jsxFactory": "Html.createElement",
-    "jsxFragmentFactory": "Html.Fragment",
-    "plugins": [{ "name": "@kitajs/ts-html-plugin" }]
+    "outDir": "./build"
   }
 }
