@@ -1,7 +1,7 @@
-import { Response } from '@adonisjs/core/http'
+import { Response, Request } from '@adonisjs/core/http'
 import { ApplicationService } from '@adonisjs/core/types'
 import router from '@adonisjs/core/services/router'
-import { HTMXResponseHeader } from '../headers.js'
+import { HTMXRequestHeader, HTMXResponseHeader } from '../headers.js'
 import { createSwapHeader, createTriggerHeader } from '../utils.js'
 import { LocationInput, RouteDefinition, SwapInput, TriggerInput } from '../types.js'
 
@@ -101,6 +101,20 @@ export default class HtmxServiceProvider {
   constructor(protected app: ApplicationService) {}
 
   async boot() {
+    Request.getter('htmx', function (this: Request) {
+      if (this.header(HTMXRequestHeader.Request)) {
+        return {
+          boosted: !!this.header(HTMXRequestHeader.Boosted),
+          historyRestore: !!this.header(HTMXRequestHeader.HistoryRestoreRequest),
+          currentUrl: this.header(HTMXRequestHeader.CurrentUrl),
+          prompt: this.header(HTMXRequestHeader.Prompt),
+          target: this.header(HTMXRequestHeader.Target),
+          trigger: this.header(HTMXRequestHeader.Trigger),
+          triggerName: this.header(HTMXRequestHeader.TriggerName),
+        }
+      }
+    })
+
     Response.macro('htmxLocation', function (this: Response, url: LocationInput): Response {
       let value: string
       if (Array.isArray(url)) {

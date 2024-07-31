@@ -94,5 +94,8 @@
   "publishConfig": {
     "access": "public",
     "tag": "latest"
+  },
+  "volta": {
+    "node": "22.5.1"
   }
 }
